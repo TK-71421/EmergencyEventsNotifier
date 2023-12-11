@@ -3,26 +3,23 @@ import mysql.connector
 from mysql.connector import errorcode
 
 # Load JSON data from file
-choice = input("Select social media sata to insert into database (will default to Reddit):\n1)Reddit\n2)Twitter\n3)Facebook\n")
+choice = input("Select social media sata to insert into database:\n1)Reddit\n2)Twitter\n")
 
 if(choice == '1'):
     print("Loading Reddit post data...")
-    with open('C:/Users/Tengis/JupyterLabProjects/apiResponse.json', 'r') as json_file:
+    with open('C:/Users/Tengis/VSCodeProjects/RedditAPI/apiResponse.json', 'r') as json_file:
         data = json.load(json_file)
 elif (choice == '2'):
     print("Loading Twitter post data...")
     with open('C:/Users/Tengis/JupyterLabProjects/liveTweets.json', 'r') as json_file:
         data = json.load(json_file)
-elif (choice == '3'):
-    print("Loading Facebook post data...")
-    exit()
 else:
     print("Input Error issue\nexiting...")
     exit()
 
 
 #get Mysql credentials
-with open('MysqlRootPwd.txt', 'r') as file:
+with open('C:/Users/Tengis/VSCodeProjects/Mysql_PyConnector/MysqlRootPwd.txt', 'r') as file:
     credentials = [line.rstrip() for line in file]
 
 # Connect to MySQL
@@ -50,6 +47,7 @@ if connection.is_connected():
     print("DB Connection Succesful...")
 
 # Insert data into MySQL table; this method protects against sql inject
+#TODO: implement exception handling per iteration incase of duplicate insert
 if(choice == '1'):
     #insert Reddit Data
     for post in data:
