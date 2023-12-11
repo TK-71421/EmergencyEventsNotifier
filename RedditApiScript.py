@@ -1,34 +1,14 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 CLIENT_ID = 'QDp6IOY52ye8CpzPk20PUQ'
 SECRET_KEY = 'OM7mOfe-YjbJA-bb7ljo97sbyicMXg'
 
-
-# In[2]:
-
-
 import requests
 import json
-
-
-# In[3]:
-
+import subprocess
 
 client_auth = requests.auth.HTTPBasicAuth(CLIENT_ID, SECRET_KEY)
 
-
-# In[4]:
-
-
-with open('pw.txt', 'r') as file:
+with open('reddit_pw.txt', 'r') as file:
     credentials = [line.rstrip() for line in file]
-
-
-# In[5]:
 
 
 data = {
@@ -37,14 +17,7 @@ data = {
     'password': credentials[1]
 }
 
-
-# In[6]:
-
-
 headers = {'User-Agent': 'GnomeBot/0.0.1'}
-
-
-# In[7]:
 
 
 #request access token for OAuth2 protocol
@@ -52,124 +25,89 @@ response = requests.post('https://www.reddit.com/api/v1/access_token',
                     auth=client_auth, data=data, headers=headers)
 
 
-# In[8]:
-
-
 TOKEN = response.json()['access_token']
 #print(TOKEN)
-
-
-# In[9]:
 
 
 headers['Authorization'] = f'bearer {TOKEN}'
 
 
-# In[10]:
-
-
-headers
-
-
-# In[14]:
+subreddit = 'Palestine' 
+print(f"Grabbing Posts from: r/{subreddit}.........")
 
 
 #limit param goes from 1-100
-response = requests.get('https://oauth.reddit.com/r/politics/hot',
+response = requests.get(f'https://oauth.reddit.com/r/{subreddit}/hot',
                     headers=headers, params={'limit':'100'})
-#response.json()
+
+if response.status_code != 200:
+    print("Error collecting; please double check request syntax")
+    print(f"HTTP Response: {response.status_code}")
 
 
-# In[15]:
 
-
-#take response dict & convert into json obj; then write to file
-#see: https://www.geeksforgeeks.org/reading-and-writing-json-to-a-file-in-python/#
-#https://www.geeksforgeeks.org/json-dumps-in-python/
-
-#json_obj = json.dumps(response.json(), indent=4)
-#with open("apiResponse.json","w") as outfile:
-#    outfile.write(json_obj)
-
-#will most likely need to trim unnecessary fields in here.
-#need to skip first [element 0] in child arr post in API response as that is weekly discussion thread
-
-
-# In[16]:
-
-
-to_extract = ['title',
-'subreddit_name_prefixed',
-'name',
-'id',
-'ups',
-'downs',
-'upvote_ratio',
-'score',
-'created_utc']
+#extract desired fields from API response; write to json file to be inserted in db
+to_extract = ['title','subreddit_name_prefixed','name','id','ups','downs','upvote_ratio','score','created_utc']
 
 out_dict = {}
 count=0
 
 for post in response.json()['data']['children']:
-    if count == 0: #skip 1st post: weekly discussion board
-        count+=1
-        continue
+    #if count == 0: #skip 1st post: weekly discussion board
+    #    count+=1
+    #    continue
     out_dict[f'post_{count}'] = {}
     for field in to_extract:
         #print(f"{field}: {post['data'][field]}")
         out_dict[f'post_{count}'][field] = post['data'][field]
+
+        #add words in title to find keywords
+        #if field == 'title':
+            #with open("titles.txt","a", encoding="utf-8") as outfile:
+                #outfile.write(post['data']['title']+"\n")
     count+=1
 
 json_obj = json.dumps(out_dict, indent=4)
 with open("apiResponse.json","w") as outfile:
     outfile.write(json_obj)
 
-out_dict
+#print(out_dict)
+print("output saved to: apiResponse.json")
+
+#manaully use keywords for SQL query
+#use these words in query on db
+#query against posts in database (along with default presets)
+#if number of posts w/ keyword > threshold among BOTH tables generate notifaction
+# base info off of posts w/ most matching keywords; determine location(???)
+#include keywords as tags in notifaction, time since post, inude link to post/title
+#can generate title based off of post title
+
+'''
+#find 10 most common words in post titles (keywords) and write to file
+def call_most_common_words_script(input_file_path, output_file_path, n):
+    script_path = "C:/Users/Tengis/VSCodeProjects/RedditAPI/MostCommonWordTrie.py"  # Replace with the actual path to your script
+    command = ["python", script_path, input_file_path, output_file_path]
+
+    try:
+        # Run the script with input file, output file, and n as arguments
+        subprocess.run(command + [str(n)], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
+        # Handle the error as needed
+
+input_path = "C:/Users/Tengis/VSCodeProjects/RedditAPI/titles.txt"
+output_path = "C:/Users/Tengis/VSCodeProjects/RedditAPI/keywords.txt"
+call_most_common_words_script(input_path, output_path, 10)
 
 
-# ## API response structure
-# to get to fields in post:
-# repsonse.json() >> ['data']['children'] -> array dict's of all posts in response [{'kind' : "t3", 'data': {>useful fields here<} }, {}, ...]
-# 
-# all fields from dict of FIRST post in children array:
-#     "print(response.json()['data']['children'][0]['data'].keys())"
-# ## fields interested in:
-# 
-# ['title',
-# 'subeddit_name_prefixed',
-# 'name',
-# 'id',
-# 'ups',
-# 'downs',
-# 'upvote_ratio',
-# 'score',
-# 'created_utc']
-# 
-# for  'created_utc' field to Date/Time format: see https://dev.mysql.com/doc/refman/8.0/en/date-and-time-functions.html#function_convert-tz
 
-# ## Selecting speficic fields from response Json example
-# 
-# refer to documentation (outdated): https://github.com/reddit-archive/reddit/wiki/json
-# 
-# to_extract = ['title','url','score','num_comments','view_count','ups','downs','selftext']
-# 
-# for e in to_extract:
-#     print(f"{e}: {r['data']['children'][0]['data'][e]}")
-
-# ## Getting Comments from API example:
-# https://www.reddit.com/r/redditdev/comments/v7sw57/will_i_get_all_the_comments_of_a_post_through/?rdt=53787
-
-# In[34]:
-
-
+#arbitrary post ID
 postID = "17vtdi3"
 response_comments = requests.get('https://oauth.reddit.com/r/politics/comments/'+postID,
                     headers=headers, params={'limit':'5'})
 # NOTE: FIRST 1-2 comments are autoMod's commenting rules (will need to skip)
 
 
-# In[47]:
 
 
 for comment in response_comments.json()[1]['data']['children']:
@@ -178,7 +116,7 @@ for comment in response_comments.json()[1]['data']['children']:
 # NOTE: FIRST 1-2 comments are autoMod's commenting rules (will need to skip)
 # last dict in ['children'] array is parent id's -> can be ignored
 #only loop thru (1 to n-1) comments
-
+'''
 
 
 
