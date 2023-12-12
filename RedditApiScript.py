@@ -74,13 +74,8 @@ with open("apiResponse.json","w") as outfile:
 #print(out_dict)
 print("output saved to: apiResponse.json")
 
-#manaully use keywords for SQL query
-#use these words in query on db
-#query against posts in database (along with default presets)
-#if number of posts w/ keyword > threshold among BOTH tables generate notifaction
-# base info off of posts w/ most matching keywords; determine location(???)
-#include keywords as tags in notifaction, time since post, inude link to post/title
-#can generate title based off of post title
+
+
 
 '''
 #find 10 most common words in post titles (keywords) and write to file
