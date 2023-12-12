@@ -7,8 +7,6 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-
-
 #query db to get data to build email
 
 #get Mysql credentials
@@ -66,25 +64,8 @@ cursor.close()
 connection.close()
 
 '''
-all spaCy entity labels:
-PERSON:      People, including fictional.
-NORP:        Nationalities or religious or political groups.
-FAC:         Buildings, airports, highways, bridges, etc.
-ORG:         Companies, agencies, institutions, etc.
-GPE:         Countries, cities, states.
-LOC:         Non-GPE locations, mountain ranges, bodies of water.
-PRODUCT:     Objects, vehicles, foods, etc. (Not services.)
-EVENT:       Named hurricanes, battles, wars, sports events, etc.
-WORK_OF_ART: Titles of books, songs, etc.
-LAW:         Named documents made into laws.
-LANGUAGE:    Any named language.
-DATE:        Absolute or relative dates or periods.
-TIME:        Times smaller than a day.
-PERCENT:     Percentage, including ”%“.
-MONEY:       Monetary values, including unit.
-QUANTITY:    Measurements, as of weight or distance.
-ORDINAL:     “first”, “second”, etc.
-CARDINAL:    Numerals that do not fall under another type.
+see below for info on all SpaCy entity labels:
+https://stackoverflow.com/questions/70835924/how-to-get-a-description-for-each-spacy-ner-entity
 '''
 
 
@@ -139,9 +120,12 @@ def send_email_notif(fromaddr, toaddr, pw, post_data):
     server.quit()
 
 
-#TODO: get recipient email to send notification alert
-#send_email_notif("hjohnson24816@gmail.com", "hjohnson24816@gmail.com", pw, emailData["notif_2"])
-
+#prompt for recipient email & send alerts
+email = input("Enter an email to recieve Alerts from Emergency Notification System:\n")
 for notif in emailData:
-    print("sending notification alert email to: hjohnson24816@gmail.com...")
-    send_email_notif("hjohnson24816@gmail.com", "hjohnson24816@gmail.com", pw, emailData[notif])
+    try:
+        print(f"sending notification alert email to: {email}...")
+        send_email_notif("hjohnson24816@gmail.com", email, pw, emailData[notif])
+    except smtplib.SMTPException as err:
+        print(f"Error sending Alert(s):\n{err}")
+        exit(1)
